@@ -6,7 +6,7 @@ chmod a+x ./executables/parallel_mm
 g++ ./make-mm-data.cpp -o ./executables/make-mm-data
 chmod a+x ./executables/make-mm-data
 
-declare -a matrixwidth=( 8192 512 1024 2048 4096 16384 )
+declare -a matrixwidth=( 512 1024 2048 4096 8192 16384 )
 declare -a startingmemory=( 16 16 16 16 16 16 )
 
 NUMRUNS=3
@@ -25,10 +25,10 @@ do
 done
 
 #deleting out-sorting.txt and creating again
-if [ -f "out-mm.txt" ]
+if [ -f "out_mm.csv" ]
 then
-  echo "out-mm.txt already exists. Deleting it first."
-  rm out-mm.txt && touch out-mm.txt
+  echo "out_mm.csv already exists. Deleting it first."
+  rm out_mm.csv && touch out_mm.csv
 fi
 
 if [ -f "log.txt" ]
@@ -51,7 +51,7 @@ do
 		./cgroup_creation.sh cache-test-arghya
 		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
 		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo "MM-SCAN sequential instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out-mm.txt 
+		echo "MM-SCAN sequential instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out_mm.csv 
 		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
 		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes1 1
 		sleep 5
@@ -67,24 +67,24 @@ do
 		wait
 
 
-		# #code for constant memory profile funnel sort
-		# ./cgroup_creation.sh cache-test-arghya
-		# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
-		# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
-		# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		# echo "MM-SCAN concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out-mm.txt 
-		# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes1 1 &
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes2 4
-		# sleep 5
-		# wait
+		#code for constant memory profile funnel sort
+		./cgroup_creation.sh cache-test-arghya
+		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
+		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
+		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+		echo "MM-SCAN concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out_mm.csv 
+		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes1 1 &
+		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes2 4
+		sleep 5
+		wait
 
 		#code for constant memory profile funnel sort
 		./cgroup_creation.sh cache-test-arghya
 		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
 		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
 		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo "MM-SCAN concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out-mm.txt 
+		echo "MM-SCAN concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out_mm.csv 
 		echo $((2*TOTALMEMORY)) > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
 		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes2 1 &
 		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 1 $MATRIXWIDTH data_files/nullbytes1 4
@@ -95,7 +95,7 @@ do
 		./cgroup_creation.sh cache-test-arghya
 		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
 		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo "MM-INPLACE sequential instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out-mm.txt 
+		echo "MM-INPLACE sequential instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out_mm.csv 
 		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
 		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes1 1
 		sleep 5
@@ -111,24 +111,24 @@ do
 		wait
 
 
-		# #code for constant memory profile funnel sort
-		# ./cgroup_creation.sh cache-test-arghya
-		# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
-		# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
-		# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		# echo "MM-INPLACE concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out-mm.txt 
-		# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes1 1 &
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes2 4
-		# sleep 5
-		# wait
+		#code for constant memory profile funnel sort
+		./cgroup_creation.sh cache-test-arghya
+		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
+		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
+		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+		echo "MM-INPLACE concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out_mm.csv 
+		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes1 1 &
+		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes2 4
+		sleep 5
+		wait
 
 		#code for constant memory profile funnel sort
 		./cgroup_creation.sh cache-test-arghya
 		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
 		./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
 		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo "MM-INPLACE concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out-mm.txt 
+		echo "MM-INPLACE concurrent instances with $MATRIXWIDTH and $STARTINGMEMORY_MB" >> out_mm.csv 
 		echo $((2*TOTALMEMORY)) > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
 		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes2 1 &
 		cgexec -g memory:cache-test-arghya ./executables/parallel_mm 0 $MATRIXWIDTH data_files/nullbytes1 4

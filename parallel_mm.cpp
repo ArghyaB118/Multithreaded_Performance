@@ -1,10 +1,10 @@
 #include "CacheHelper.h"
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<sys/mman.h>
-#include<fcntl.h>
-#include<chrono>
-#include<fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <chrono>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <stdlib.h>
@@ -222,8 +222,9 @@ int main(int argc, char *argv[]){
 	std::cout << "cgexec -g memory:cache-test-arghya ./executables/parallel_mm <0=MM-INPLACE/1=MM-SCAN> matrix-width data_files/nullbytes <num_threads(1/4)>\n";
 	exit(1);
 	}
-	std::ofstream mm_out = std::ofstream("out-mm.txt",std::ofstream::out | std::ofstream::app);
+	std::ofstream mm_out = std::ofstream("out_mm.csv",std::ofstream::out | std::ofstream::app);
 	program = atoi(argv[1]); length = std::stol(argv[2]); num_threads = atoi(argv[4]); 
+	std::string datafilename = argv[3];
 	std::cout << "Running cache_adaptive matrix multiply with matrices of size: " << (int)length << "x" << (int)length << "\n";
 	std::vector<long> io_stats = {0,0};
 	CacheHelper::print_io_data(io_stats, "Printing I/O statistics at program start @@@@@ \n");
@@ -320,8 +321,12 @@ int main(int argc, char *argv[]){
 	std::cout << "===========================================\n";
 	CacheHelper::print_io_data(io_stats, "Printing I/O statistics AFTER matrix multiplication @@@@@ \n");
 
-
-	mm_out << "MM-parallel," << argv[3] << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+	if (program == 0)
+		mm_out << "MM_INPLACE" << "," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+	else if (program == 1)
+		mm_out << "MM_SCAN" << "," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+	else
+		cout << "program can be only 0 or 1" << endl;
 	/*std::cout << "Result array\n";
 	for (unsigned int i = 0 ; i < length*length; i++){
 	std::cout << dst[i] << " ";
