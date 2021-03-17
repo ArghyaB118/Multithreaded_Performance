@@ -15,10 +15,11 @@
 #define TYPE int
 using namespace std;
 
-int num_threads, program;
+int num_threads, program, memory;
 unsigned long length = 0;
 const int progress_depth = 4;
-char* datafile;
+char* datafile; 
+char* cgroup_name;
 TYPE* dst;
 
 int length1, length2, length11, length12, length21, length22;
@@ -223,14 +224,17 @@ int main(int argc, char *argv[]){
 	exit(1);
 	}
 	std::ofstream mm_out = std::ofstream("out_mm.csv",std::ofstream::out | std::ofstream::app);
-	program = atoi(argv[1]); length = std::stol(argv[2]); num_threads = atoi(argv[4]); 
-	std::string datafilename = argv[3];
+	program = atoi(argv[1]); length = std::stol(argv[2]); memory = std::stol(argv[3]); num_threads = atoi(argv[6]); 
+	std::string datafilename = argv[4];
+	datafile = new char[strlen(argv[4]) + 1](); strncpy(datafile,argv[4],strlen(argv[4]));
+	cgroup_name = new char[strlen(argv[5]) + 1](); strncpy(cgroup_name,argv[5],strlen(argv[5]));
+
 	std::cout << "Running cache_adaptive matrix multiply with matrices of size: " << (int)length << "x" << (int)length << "\n";
 	std::vector<long> io_stats = {0,0};
 	CacheHelper::print_io_data(io_stats, "Printing I/O statistics at program start @@@@@ \n");
 
 	int fdout;
-	datafile = new char[strlen(argv[3]) + 1](); strncpy(datafile,argv[3],strlen(argv[3]));
+	
 	if ((fdout = open (datafile, O_RDWR, 0x0777 )) < 0){
 		printf ("can't create nullbytes for writing\n");
 		return 0;
@@ -260,20 +264,38 @@ int main(int argc, char *argv[]){
 	CacheHelper::print_io_data(io_stats, "Printing I/O statistics AFTER loading output matrix to cache @@@@@ \n");
 	std::cout << "===========================================\n";
 
-	//MODIFY MEMORY WITH CGROUP
-	//CacheHelper::limit_memory(std::stol(argv[3])*1024*1024,argv[4]);
+
 
 	std::chrono::system_clock::time_point t_start = std::chrono::system_clock::now();
 	std::clock_t start = std::clock();
 	if (num_threads == 1) {
-		if (program == 0) {
-			mm_inplace(dst,dst+length*length,dst+length*length*2,length);
-		}
-		else if (program == 1) {
-			mm_scan(dst,dst+length*length,dst+length*length*2,dst+length*length*3,length,length);
-		}
-		else {
-			cout << "program can be only 0 or 1" << endl;
+		// if (program == 0) {
+		// 	mm_inplace(dst,dst+length*length,dst+length*length*2,length);
+		// }
+		// else if (program == 1) {
+		// 	mm_scan(dst,dst+length*length,dst+length*length*2,dst+length*length*3,length,length);
+		// }
+		// else {
+		// 	cout << "program can be only 0 or 1" << endl;
+		// }
+
+		length1 = ( length >> 1 );
+		length2 = length1 * length1;
+		length11 = 0;
+		length12 = length11 + length2;
+		length21 = length12 + length2;
+		length22 = length21 + length2;
+
+		mm_root(1);
+		mm_root(2);
+		mm_root(3);
+		mm_root(4);
+		mm_root(5);
+		mm_root(6);
+		mm_root(7);
+		mm_root(8);
+		if (program == 1) {
+			scan_add(dst, dst + length*length*3);
 		}
 	}
 	else if (num_threads == 4) {
@@ -321,12 +343,32 @@ int main(int argc, char *argv[]){
 	std::cout << "===========================================\n";
 	CacheHelper::print_io_data(io_stats, "Printing I/O statistics AFTER matrix multiplication @@@@@ \n");
 
-	if (program == 0)
-		mm_out << "MM_INPLACE" << "," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
-	else if (program == 1)
-		mm_out << "MM_SCAN" << "," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+	if (program == 0) {
+		if (num_threads == 1) {
+			mm_out << "MM_INPLACE,single_threaded," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+		}
+		else if (num_threads == 4) {
+			mm_out << "MM_INPLACE,multi_threaded," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+		}
+		else
+			cout << "invalid num_threads" << endl;
+	}
+	else if (program == 1) {
+		if (num_threads == 1) {
+			mm_out << "MM_SCAN,single_threaded," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+		}
+		else if (num_threads == 4) {
+			mm_out << "MM_SCAN,multi_threaded," << datafilename.substr(11,21) << "," << length << "," << num_threads << "," << wall_time << "," << (float)io_stats[0]/1000000.0 << "," << (float)io_stats[1]/1000000.0 << "," << (float)(io_stats[0] + io_stats[1])/1000000.0 << std::endl;
+		}
+		else
+			cout << "invalid num_threads" << endl;
+	}
 	else
 		cout << "program can be only 0 or 1" << endl;
+
+	//MODIFY MEMORY WITH CGROUP
+	CacheHelper::limit_memory(memory*1024*1024/2, cgroup_name);
+
 	/*std::cout << "Result array\n";
 	for (unsigned int i = 0 ; i < length*length; i++){
 	std::cout << dst[i] << " ";

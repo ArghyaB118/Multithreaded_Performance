@@ -10,6 +10,7 @@
 namespace CacheHelper{
   //int MM_BASE_SIZE = 1024; //for block_mm in 16 MiB 
   int MM_BASE_SIZE = 128;
+  int EM_BASE_SIZE = 8192;
   std::string exec(std::string cmd) {
       std::array<char, 128> buffer;
       std::string result;
@@ -67,10 +68,19 @@ namespace CacheHelper{
     std::string command = std::string("bash -c \"echo ") + string + std::string(" > /var/cgroups/") + string2 + std::string("/memory.limit_in_bytes\"");
     //std::cout << "Command: " << command << std::endl;
     int return_code = system(command.c_str());
+    std::string command1 = std::string("bash -c \"echo ") + string + std::string(" > /sys/fs/cgroup/memory/") + string2 + std::string("/memory.limit_in_bytes\"");
+    //std::cout << "Command: " << command << std::endl;
+    int return_code1 = system(command1.c_str());
+    
     //std::cout << "Memory usage: " << exec(std::string("cat /var/cgroups/") + string2 + std::string("/memory.usage_in_bytes")) << std::endl;
     if (return_code != 0){
       std::cout << "Error. Unable to set cgroup memory " << string << " Code: " << return_code << "\n";
       std::cout << "Memory usage: " << exec(std::string("cat /var/cgroups/") + string2 + std::string("/memory.usage_in_bytes")) << std::endl;
+      //exit(1);
+    }
+    if (return_code1 != 0){
+      std::cout << "Error. Unable to set cgroup memory " << string << " Code: " << return_code << "\n";
+      std::cout << "Memory usage: " << exec(std::string("cat /sys/fs/cgroup/memory/") + string2 + std::string("/memory.usage_in_bytes")) << std::endl;
       //exit(1);
     }
     //std::cout << "Limiting cgroup memory: " << string << " bytes\n";
