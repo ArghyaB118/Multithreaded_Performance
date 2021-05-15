@@ -1,16 +1,18 @@
 #!/bin/bash
 set -ex
 mkdir -p executables
-g++  -std=c++11 -pthread ./sorting.cpp -o ./executables/parallel_sorting
+g++  -std=c++11 ./sorting.cpp -o ./executables/parallel_sorting -lpthread
 chmod a+x ./executables/parallel_sorting
 g++ ./make-unsorted-data.cpp -o ./executables/make-unsorted-data
 chmod a+x ./executables/make-unsorted-data
 
+USERID=arghya
 NUMRUNS=1
 NUMINSTANCE=2
 
-declare -a data_size=( 256 512 1024 2048 4096 ) 
-declare -a memory_given=( 256 256 256 256 256 )
+declare -a data_size=( 256 512 1024 2048 4096 8192 16384 ) 
+declare -a memory_given=( 256 256 256 256 256 256 256 )
+declare -a algorithms=( 1 )
 
 #creating nullbytes
 mkdir -p data_files
@@ -39,79 +41,50 @@ fi
 
 for i in `seq 1 $NUMRUNS`;
 do
-	for (( index=0; index<=${#data_size[@]}-1; index++ ));
+	for (( j=0; j<=${#data_size[@]}-1; j++ ));
 	do
-		data_size_run=${data_size[$index]}
-		memory_given_run=${memory_given[$index]}
-		TOTALMEMORY=$(($memory_given_run*1024*1024))
+		for (( k=0; k<=${#algorithms[@]}-1; k++ ))
+		do
+			algorithm=${algorithms[$k]}
+			data_size_run=${data_size[$j]}
+			memory_given_run=${memory_given[$j]}
+			TOTALMEMORY=$(($memory_given_run*1024*1024))
 
-		#fanout=8 //decided in parallel_sorting.cpp
-		#block_size=8192 //transfered to CacheHelper
+			#fanout=8 //decided in parallel_sorting.cpp
+			#block_size=8192 //transfered to CacheHelper
 
-		#code for parallel threaded funnel sort, instances with variable parallelism are run together
-		./cgroup_creation.sh cache-test-arghya
-		./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 0 1 data_files/nullbytes1
-		wait
+			#code for parallel threaded funnel sort, instances with variable parallelism are run together
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-unsorted-data $data_size_run data_files/nullbytes1
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run $algorithm 1 data_files/nullbytes1
+			wait
 
-		./cgroup_creation.sh cache-test-arghya
-		./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 0 8 data_files/nullbytes1
-		wait
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-unsorted-data $data_size_run data_files/nullbytes1
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run $algorithm 8 data_files/nullbytes1
+			wait
 
-		./cgroup_creation.sh cache-test-arghya
-		./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		./executables/make-unsorted-data $data_size_run data_files/nullbytes2
-		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 0 1 data_files/nullbytes1 &
-		cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 0 8 data_files/nullbytes2
-		wait
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-unsorted-data $data_size_run data_files/nullbytes1
+			./executables/make-unsorted-data $data_size_run data_files/nullbytes2
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run $algorithm 1 data_files/nullbytes1 &
+			cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run $algorithm 8 data_files/nullbytes2
+			wait
 
-		./cgroup_creation.sh cache-test-arghya
-		./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		./executables/make-unsorted-data $data_size_run data_files/nullbytes2
-		sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 0 1 data_files/nullbytes2 &
-		cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 0 8 data_files/nullbytes1
-		wait
-
-		# #code for parallel threaded merge sort, instances with variable parallelism are run together
-		# ./cgroup_creation.sh cache-test-arghya
-		# ./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 1 1 data_files/nullbytes1
-		# wait
-
-		# ./cgroup_creation.sh cache-test-arghya
-		# ./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 1 8 data_files/nullbytes1
-		# wait
-
-		# ./cgroup_creation.sh cache-test-arghya
-		# ./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		# ./executables/make-unsorted-data $data_size_run data_files/nullbytes2
-		# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 1 1 data_files/nullbytes1 &
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 1 8 data_files/nullbytes2
-		# wait
-
-		# ./cgroup_creation.sh cache-test-arghya
-		# ./executables/make-unsorted-data $data_size_run data_files/nullbytes1
-		# ./executables/make-unsorted-data $data_size_run data_files/nullbytes2
-		# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-		# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 1 1 data_files/nullbytes2 &
-		# cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run 1 8 data_files/nullbytes1
-		# wait		
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-unsorted-data $data_size_run data_files/nullbytes1
+			./executables/make-unsorted-data $data_size_run data_files/nullbytes2
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run $algorithm 1 data_files/nullbytes2 &
+			cgexec -g memory:cache-test-arghya ./executables/parallel_sorting $memory_given_run $data_size_run $algorithm 8 data_files/nullbytes1
+			wait
+		done
 	done
 done

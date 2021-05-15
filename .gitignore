@@ -6,9 +6,9 @@ bin-release/
 
 # Other files and folders
 .settings/
-./data_files/
-./executables/
-./balloon_data/
+./data_files/*
+./executables/*
+./balloon_data/*
 
 # Executables
 *.swf
