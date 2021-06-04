@@ -62,7 +62,7 @@ class Integer_comparator
 
 
 void merge(int* l, int* r, unsigned long long num_elts, int temp_arr[]) {
-	//cout << l << " " << r << endl;
+	// cout << l << " " << r << endl;
 	priority_queue<MinHeapNode, vector<MinHeapNode>, MinHeapNodeComparator> pq;
 	for (int i = 0; i < num_ways; i++) {
 	    for (unsigned long long j = 0; j < base_case_mod; j++) {
@@ -73,7 +73,7 @@ void merge(int* l, int* r, unsigned long long num_elts, int temp_arr[]) {
 	    }
 	}
 	unsigned long long itr = 0ULL;
-	//cout << "here1" << endl; int count = 0;
+	// cout << "here1" << endl; int count = 0;
 	while(!pq.empty()) {
 		MinHeapNode curr = pq.top(); pq.pop();
 		int* value = curr.element; Position psn = curr.psn; 
@@ -90,15 +90,15 @@ void merge(int* l, int* r, unsigned long long num_elts, int temp_arr[]) {
 			}
 		}
 	}
-	//cout << "here2" << endl;
+	// cout << "here2" << endl;
 	for (unsigned long long i = 0 ; i < num_elts; i++)
     	*(l + i) = temp_arr[i];
-    //cout << "here3" << endl;
+    // cout << "here3" << endl;
 }
 
 
 void mergeSort(int* l, int* r, unsigned long long num_elts) {
-	//cout << "recursive call" << endl;
+	// cout << l << " recursive call " << r << endl;
 	if (l < r && num_elts > base_case) {
 		for (int i = 0; i < num_ways; i++) {
 			mergeSort(l + i * num_elts / num_ways, l + (i + 1) * num_elts / num_ways, num_elts / num_ways); 
@@ -198,11 +198,12 @@ int main(int argc, char *argv[]) {
 		std::thread th8(rootMergeSort, 8);
 		th1.join(); th2.join(); th3.join(); th4.join();
 		th5.join(); th6.join(); th7.join(); th8.join();
-		base_case_mod = base_case_mod * num_threads;
-		int* temp_arr = NULL;
-		temp_arr = new int[num_elements];
-		merge(arr, arr + num_elements, num_elements, temp_arr);
-		delete [] temp_arr; temp_arr = NULL;
+		sort(arr, arr + num_elements);
+		// base_case_mod = base_case_mod * num_threads;
+		// int* temp_arr = NULL;
+		// temp_arr = new int[num_elements];
+		// merge(arr, arr + num_elements, num_elements, temp_arr);
+		// delete [] temp_arr; temp_arr = NULL;
   	}
   	else if (num_threads == 8 && program == 1) {
   		std::thread th1(rootFunnelSort, 1);
@@ -215,6 +216,7 @@ int main(int argc, char *argv[]) {
 		std::thread th8(rootFunnelSort, 8);
 		th1.join(); th2.join(); th3.join(); th4.join();
 		th5.join(); th6.join(); th7.join(); th8.join();
+		// sort(arr, arr + num_elements);
 		// base_case_mod = base_case_mod * num_threads;
 		// int* temp_arr = NULL;
 		// temp_arr = new int[num_elements];
@@ -232,7 +234,8 @@ int main(int argc, char *argv[]) {
 		std::thread th8(rootSort, 8);
 		th1.join(); th2.join(); th3.join(); th4.join();
 		th5.join(); th6.join(); th7.join(); th8.join();
-		//sort(arr, arr + num_elements);
+		// sort(arr, arr + num_elements);
+		// //sort(arr, arr + num_elements);
 		// base_case_mod = base_case / num_ways;
 		// int* temp_arr = NULL;
 		// temp_arr = new int[num_elements];
