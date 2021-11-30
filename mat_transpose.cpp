@@ -19,18 +19,63 @@ char* cgroup_name;
 TYPE* dst;
 
 
-void iterative_mat_transpose()
-{
+/*
+This function converts a matrix in row major layout to Z-Morton row major layout.
+x is the output
+xo is the input
+no is the width of the entire matrix,
+nn is the width of the matrix in the current recursive call
+*/
+void conv_RM_2_ZM_RM(TYPE* x,TYPE* xo, int n,int no ){
+  /*
+	std::string depth_trace = "";
+	int n3 = length;
+	int limit = 0;
+	while (n3 > n || n3 == 1){
+		n3 /= 2;
+		depth_trace += " ";
+		limit++;
+	}
+	std::cout << depth_trace << "Running conv with depth: " << limit;
+	std::cout << " value of n: " << n << std::endl;
+  */
+	if ( n <= CacheHelper::MM_BASE_SIZE )
+	{
+		for ( int i = 0; i < n; i++ )
+		{
+			for ( int j = 0; j < n; j++ )
+				( *x++ ) = ( *xo++ );
+
+			xo += ( no - n );
+		}
+	}
+	else
+	{
+		int nn = ( n >> 1 );
+		int nn2 = nn * nn;
+
+		const int m11 = 0;
+		int m12 = m11 + nn2;
+		int m21 = m12 + nn2;
+		int m22 = m21 + nn2;
+
+		conv_RM_2_ZM_RM( x, xo, nn, no );
+		conv_RM_2_ZM_RM( x+m12, xo + nn, nn, no );
+		conv_RM_2_ZM_RM( x+m21, xo + nn * no, nn, no );
+		conv_RM_2_ZM_RM( x+m22, xo + nn * no + nn, nn, no );
+	}
+}
+
+void iterative_mat_transpose(TYPE* x) {
 	unsigned long i, j;
 	for (i = 0; i < length; i++)
 		for (j = 0; j < length; j++)
-			dst[i*length + j] = dst[i + j*length];
+			*(x + i*length + j) = *(x + i + j*length);
 }
 
-int main(int argc, char *argv[])
-{
-	if (argc < 4){
-	std::cout << "cgexec -g memory:cache-test-arghya ./executables/parallel_mm <0=MM-INPLACE/1=MM-SCAN> matrix-width data_files/nullbytes <num_threads(1/4)>\n";
+int main(int argc, char *argv[]) {
+	if (argc < 6){
+	std::cout << "cgexec -g memory:cache-test-arghya ./executables/parallel_mt <0=MT-ITERATIVE/1=MT-OBLIVIOUS> matrix-width data_files/nullbytes <cgroup_name> <num_threads(1/4)>\n";
 	exit(1);
 	}
 	std::ofstream mm_out = std::ofstream("out_mt.csv",std::ofstream::out | std::ofstream::app);
@@ -56,11 +101,20 @@ int main(int argc, char *argv[])
 	std::chrono::system_clock::time_point t_start = std::chrono::system_clock::now();
 	std::clock_t start = std::clock();
 	
-	if (num_threads == 1)
-		if (program == 0)
-			iterative_mat_transpose();
-
-
+	if (num_threads == 1) {
+		if (program == 0) {
+			for (unsigned int i = 0; i < length*length; i++) {
+				dst[i] = i;
+			}
+			iterative_mat_transpose(dst);
+		}
+		if (program == 1) {
+			for (unsigned int i = 0; i < length*length; i++) {
+				dst[i] = i;
+			}
+			conv_RM_2_ZM_RM(dst+length*length,dst,length,length);
+		}
+	}
 	std::chrono::system_clock::time_point t_end = std::chrono::system_clock::now();
 	double cpu_time = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	auto wall_time = std::chrono::duration<double, std::milli>(t_end-t_start).count();

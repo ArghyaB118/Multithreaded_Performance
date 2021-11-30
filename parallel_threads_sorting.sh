@@ -10,8 +10,8 @@ USERID=arghya
 NUMRUNS=1
 NUMINSTANCE=2
 
-declare -a data_size=( 256 512 1024 2048 4096 8192 16384 ) 
-declare -a memory_given=( 256 256 256 256 256 256 256 )
+declare -a data_size=( 256 512 1024 2048 4096 8192 ) 
+declare -a memory_given=( 256 256 256 256 256 256 )
 declare -a algorithms=( 0 1 2 )
 
 #creating nullbytes

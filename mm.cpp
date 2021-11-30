@@ -227,7 +227,7 @@ void mm_root( int inp ) {
 
 int main(int argc, char *argv[]){
 	if (argc < 4){
-		std::cout << "cgexec -g memory:cache-test-arghya ./executables/parallel_mm <0=MM-INPLACE/1=MM-SCAN> matrix-width data_files/nullbytes <num_threads(1/4)>\n";
+		std::cout << "cgexec -g memory:cache-test-arghya ./executables/parallel_mm <0=MM-INPLACE/1=MM-SCAN> matrix-width memory-size-MiB data_files/nullbytes <cgroup_name> <num_threads(1/4)>\n";
 		exit(1);
 	}
 	std::ofstream mm_out = std::ofstream("out_mm.csv",std::ofstream::out | std::ofstream::app);

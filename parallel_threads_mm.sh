@@ -6,9 +6,13 @@ chmod a+x ./executables/parallel_mm
 g++ ./make-mm-data.cpp -o ./executables/make-mm-data
 chmod a+x ./executables/make-mm-data
 
-declare -a matrixwidth=( 512 1024 2048 4096 8192 )
-declare -a startingmemory=( 16 16 16 16 16 )
-declare -a algorithms=( 0 1 2 )
+#declare -a matrixwidth=( 512 1024 2048 4096 8192 )
+#declare -a startingmemory=( 16 16 16 16 16 )
+#declare -a algorithms=( 0 1 2 )
+declare -a matrixwidth=( 2048 4096 )
+declare -a startingmemory=( 16 16 )
+declare -a algorithms=( 0 1 )
+
 
 USERID=arghya
 NUMRUNS=3
@@ -71,34 +75,12 @@ do
 			wait
 
 
-			#code for constant memory profile funnel sort
-			./cgroup_creation.sh cache-test-arghya $USERID
-			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
-			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
-			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-			echo $((2*TOTALMEMORY)) > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 1 &
-			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 4
-			sleep 5
-			wait
-
-			#code for constant memory profile funnel sort
-			./cgroup_creation.sh cache-test-arghya $USERID
-			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
-			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
-			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-			echo $((2*TOTALMEMORY)) > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
-			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 1 &
-			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 4
-			sleep 5
-			wait
-
 			# #code for constant memory profile funnel sort
 			# ./cgroup_creation.sh cache-test-arghya $USERID
 			# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
 			# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
 			# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-			# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			# echo $((2*TOTALMEMORY)) > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
 			# cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 1 &
 			# cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 4
 			# sleep 5
@@ -109,11 +91,55 @@ do
 			# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
 			# ./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
 			# sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
-			# echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			# echo $((2*TOTALMEMORY)) > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
 			# cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 1 &
 			# cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 4
 			# sleep 5
 			# wait
+
+			#code for constant memory profile funnel sort
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
+			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 1 &
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 4
+			sleep 5
+			wait
+
+			#code for constant memory profile funnel sort
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
+			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 1 &
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 4
+			sleep 5
+			wait
+
+			#code for constant memory profile funnel sort
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes1
+			./executables/make-mm-data $((4*MATRIXWIDTH)) data_files/nullbytes2
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 1 &
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $((4*MATRIXWIDTH)) $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 4
+			sleep 5
+			wait
+
+			#code for constant memory profile funnel sort
+			./cgroup_creation.sh cache-test-arghya $USERID
+			./executables/make-mm-data $((4*MATRIXWIDTH)) data_files/nullbytes1
+			./executables/make-mm-data $MATRIXWIDTH data_files/nullbytes2
+			sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches; echo 0 > /proc/sys/vm/vfs_cache_pressure"
+			echo $TOTALMEMORY > /sys/fs/cgroup/memory/cache-test-arghya/memory.limit_in_bytes
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $MATRIXWIDTH $STARTINGMEMORY_MB data_files/nullbytes2 cache-test-arghya 1 &
+			cgexec -g memory:cache-test-arghya ./executables/parallel_mm $algorithm $((4*MATRIXWIDTH)) $STARTINGMEMORY_MB data_files/nullbytes1 cache-test-arghya 4
+			sleep 5
+			wait
 		done
 	done
 done
